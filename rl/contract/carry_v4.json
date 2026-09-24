@@ -1,0 +1,315 @@
+{
+ "task": "H1-LocoManip-CarryBoxRes-v4",
+ "sim_dt": 0.005,
+ "decimation": 4,
+ "policy_dt": 0.02,
+ "upper_dt": 0.01,
+ "carrier_cutoff_hz": 0.5,
+ "joint_names_isaac": [
+  "left_hip_yaw",
+  "right_hip_yaw",
+  "torso",
+  "left_hip_roll",
+  "right_hip_roll",
+  "left_shoulder_pitch",
+  "right_shoulder_pitch",
+  "left_hip_pitch",
+  "right_hip_pitch",
+  "left_shoulder_roll",
+  "right_shoulder_roll",
+  "left_knee",
+  "right_knee",
+  "left_shoulder_yaw",
+  "right_shoulder_yaw",
+  "left_ankle",
+  "right_ankle",
+  "left_elbow",
+  "right_elbow"
+ ],
+ "leg_action_joint_names": [
+  "left_hip_yaw",
+  "right_hip_yaw",
+  "left_hip_roll",
+  "right_hip_roll",
+  "left_hip_pitch",
+  "right_hip_pitch",
+  "left_knee",
+  "right_knee",
+  "left_ankle",
+  "right_ankle"
+ ],
+ "leg_action_scale": 0.5,
+ "leg_action_use_default_offset": true,
+ "upper_joint_names": [
+  "torso",
+  "left_shoulder_pitch",
+  "left_shoulder_roll",
+  "left_shoulder_yaw",
+  "left_elbow",
+  "right_shoulder_pitch",
+  "right_shoulder_roll",
+  "right_shoulder_yaw",
+  "right_elbow"
+ ],
+ "default_joint_pos": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  -0.23552800714969635,
+  -0.23552800714969635,
+  -0.2800000011920929,
+  -0.2800000011920929,
+  -0.09319999814033508,
+  0.09319999814033508,
+  0.7900000214576721,
+  0.7900000214576721,
+  0.12063299864530563,
+  -0.12063299864530563,
+  -0.5199999809265137,
+  -0.5199999809265137,
+  0.14926399290561676,
+  0.14926399290561676
+ ],
+ "hand_offset_b": [
+  [
+   0.3694489896297455,
+   0.18000000715255737,
+   0.11818700283765793
+  ],
+  [
+   0.3694489896297455,
+   -0.18000000715255737,
+   0.11818700283765793
+  ]
+ ],
+ "qp_cfg": {
+  "dt": 0.01,
+  "k_hand": 10.0,
+  "k_pitch": 5.0,
+  "w_hand": 100.0,
+  "w_pitch": 10.0,
+  "w_posture": 0.1,
+  "k_posture": 2.0,
+  "w_reg": 0.0001,
+  "dq_max": 5.0,
+  "delta_max": 0.2,
+  "feedforward": true
+ },
+ "obs_terms_policy": [
+  [
+   "base_lin_vel",
+   [
+    3
+   ]
+  ],
+  [
+   "base_ang_vel",
+   [
+    3
+   ]
+  ],
+  [
+   "projected_gravity",
+   [
+    3
+   ]
+  ],
+  [
+   "velocity_commands",
+   [
+    3
+   ]
+  ],
+  [
+   "joint_pos",
+   [
+    19
+   ]
+  ],
+  [
+   "joint_vel",
+   [
+    19
+   ]
+  ],
+  [
+   "actions",
+   [
+    10
+   ]
+  ]
+ ],
+ "data_joint_stiffness": [
+  150.0,
+  150.0,
+  0.0,
+  150.0,
+  150.0,
+  0.0,
+  0.0,
+  200.0,
+  200.0,
+  0.0,
+  0.0,
+  200.0,
+  200.0,
+  0.0,
+  0.0,
+  20.0,
+  20.0,
+  0.0,
+  0.0
+ ],
+ "data_joint_damping": [
+  5.0,
+  5.0,
+  0.0,
+  5.0,
+  5.0,
+  0.0,
+  0.0,
+  5.0,
+  5.0,
+  0.0,
+  0.0,
+  5.0,
+  5.0,
+  0.0,
+  0.0,
+  4.0,
+  4.0,
+  0.0,
+  0.0
+ ],
+ "group_stiffness": {
+  "legs": [
+   150.0,
+   150.0,
+   150.0,
+   150.0,
+   200.0,
+   200.0,
+   200.0,
+   200.0
+  ],
+  "feet": [
+   20.0,
+   20.0
+  ],
+  "upper": [
+   200.0,
+   40.0,
+   40.0,
+   40.0,
+   40.0,
+   40.0,
+   40.0,
+   40.0,
+   40.0
+  ]
+ },
+ "group_damping": {
+  "legs": [
+   5.0,
+   5.0,
+   5.0,
+   5.0,
+   5.0,
+   5.0,
+   5.0,
+   5.0
+  ],
+  "feet": [
+   4.0,
+   4.0
+  ],
+  "upper": [
+   5.0,
+   10.0,
+   10.0,
+   10.0,
+   10.0,
+   10.0,
+   10.0,
+   10.0,
+   10.0
+  ]
+ },
+ "effort_limit": {
+  "legs": [
+   200.0,
+   200.0,
+   200.0,
+   200.0,
+   200.0,
+   200.0,
+   300.0,
+   300.0
+  ],
+  "feet": [
+   40.0,
+   40.0
+  ],
+  "upper": [
+   200.0,
+   40.0,
+   40.0,
+   40.0,
+   40.0,
+   18.0,
+   18.0,
+   18.0,
+   18.0
+  ]
+ },
+ "actuator_joint_names": {
+  "legs": [
+   "left_hip_yaw",
+   "right_hip_yaw",
+   "left_hip_roll",
+   "right_hip_roll",
+   "left_hip_pitch",
+   "right_hip_pitch",
+   "left_knee",
+   "right_knee"
+  ],
+  "feet": [
+   "left_ankle",
+   "right_ankle"
+  ],
+  "upper": [
+   "torso",
+   "left_shoulder_pitch",
+   "right_shoulder_pitch",
+   "left_shoulder_roll",
+   "right_shoulder_roll",
+   "left_shoulder_yaw",
+   "right_shoulder_yaw",
+   "left_elbow",
+   "right_elbow"
+  ]
+ },
+ "actuator_types": {
+  "legs": "ImplicitActuator",
+  "feet": "ImplicitActuator",
+  "upper": "IdealPDActuator"
+ },
+ "carrier_lead": "command",
+ "payload_mode": "free_box",
+ "box_empty_mass": 0.3,
+ "box_friction_eval": 0.75,
+ "box_size": [
+  0.2,
+  0.44,
+  0.2
+ ],
+ "ref_delta": true,
+ "delta_cfg": {
+  "scale": 0.03,
+  "in_max": 0.06,
+  "z_max": 0.05,
+  "tau": 0.05
+ }
+}

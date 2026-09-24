@@ -1,0 +1,46 @@
+# ---- 协作规则与 Agent 配置（不上传）
+AGENTS.md
+CLAUDE.md
+.claude/
+
+# ---- 文档、实验记录与验证证据（不上传；docs/validation 内含策略权重、视频、npz，约 95 MB）
+docs/
+
+# ---- colcon 构建产物与日志
+build/
+install/
+log/
+compile_commands.json
+
+# ---- 仿真 / 训练 / 评估输出
+MUJOCO_LOG.TXT
+*.log
+logs/
+rl/results/
+outputs/
+runs/
+wandb/
+
+# ---- 模型权重、导出策略、录像与数据（体积大，按需另行存放）
+*.pt
+*.pth
+*.onnx
+*.onnx.data
+*.mp4
+*.npz
+*.npy
+events.out.tfevents.*
+
+# ---- Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
