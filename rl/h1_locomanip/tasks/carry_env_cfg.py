@@ -12,12 +12,13 @@ from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.sensors import ContactSensorCfg
 from isaaclab.utils.configclass import configclass
 from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg  # noqa: F401  (类型参考)
+from isaaclab_rl.rsl_rl import RslRlSymmetryCfg
 
 import isaaclab_tasks.manager_based.locomotion.velocity.mdp as base_mdp
 from isaaclab_tasks.manager_based.locomotion.velocity.config.h1.agents.rsl_rl_ppo_cfg import H1FlatPPORunnerCfg
 from isaaclab_tasks.manager_based.locomotion.velocity.config.h1.flat_env_cfg import H1FlatEnvCfg
 
-from . import mdp
+from . import h1_symmetry, mdp
 from .upper_body_action import UpperBodyQpActionCfg
 
 # carry15 端箱姿态（DEC-003，IK 见 scripts/view_carry_poses.py），右臂 roll / yaw 取反
@@ -181,6 +182,30 @@ class H1CarryBoxResEnvCfg(H1CarryBoxEnvCfg):
                                                 params={"minimum_height": 0.8})
 
 
+FEET = ["left_ankle_link", "right_ankle_link"]
+
+
+@configclass
+class H1CarryBoxGaitEnvCfg(H1CarryBoxResEnvCfg):
+    """RL-LOCO-001 v5（DEC-009）：v4 + 周期步态（时钟观测、着地时序奖励、摆动脚高度跟踪），feet_air_time 权重 0。
+    左右镜像增强在 runner 配置里（H1CarryBoxGaitPPORunnerCfg）。"""
+    gait_period: float = 0.8
+
+    def __post_init__(self):
+        super().__post_init__()
+        T = self.gait_period
+        self.observations.policy.gait_clock = ObsTerm(func=mdp.gait_clock, params={"period": T})       # 2
+        self.observations.critic.gait_clock = ObsTerm(func=mdp.gait_clock, params={"period": T})
+        self.rewards.gait_contact = RewTerm(                                                              # 3
+            func=mdp.gait_contact_match, weight=1.0,
+            params={"period": T, "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET, preserve_order=True)})
+        self.rewards.swing_height = RewTerm(                                                              # 4
+            func=mdp.swing_foot_height, weight=1.0,
+            params={"period": T, "target": 0.08, "std": 0.02,
+                    "asset_cfg": SceneEntityCfg("robot", body_names=FEET, preserve_order=True)})
+        self.rewards.feet_air_time.weight = 0.0                                                           # 5
+
+
 @configclass
 class H1CarryPPORunnerCfg(H1FlatPPORunnerCfg):
     def __post_init__(self):
@@ -202,3 +227,13 @@ class H1CarryBoxResPPORunnerCfg(H1CarryPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
         self.experiment_name = "h1_locomanip_v4"
+
+
+@configclass
+class H1CarryBoxGaitPPORunnerCfg(H1CarryPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.experiment_name = "h1_locomanip_v5"
+        # DEC-009 第 6 项：左右镜像数据增强（原始 + 镜像两份参与 PPO 更新）
+        self.algorithm.symmetry_cfg = RslRlSymmetryCfg(
+            use_data_augmentation=True, data_augmentation_func=h1_symmetry.compute_symmetric_states)

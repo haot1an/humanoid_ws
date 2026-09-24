@@ -106,6 +106,9 @@ class CarryDeployment:
             self.delta_scale, self.delta_in_max, self.delta_z_max = dc["scale"], dc["in_max"], dc["z_max"]
             self.delta_alpha = 1.0 - np.exp(-contract["qp_cfg"]["dt"] / dc["tau"])
         self.delta_override = None
+        # v5（DEC-009）：actor 观测末尾追加步态时钟 [sin 2πφ, cos 2πφ]，φ = (reset 后第 k 次策略调用 · policy_dt / T) mod 1，
+        # 与 Isaac 中 episode_length_buf · step_dt 一致
+        self.gait_period = contract.get("gait_period")
         self.box_qadr = self.m.jnt_qposadr[self.m.joint("box_free").id] if self.box_free else None
         self.box_vadr = self.m.jnt_dofadr[self.m.joint("box_free").id] if self.box_free else None
         self.d, self.dc = mujoco.MjData(self.m), None
@@ -202,6 +205,9 @@ class CarryDeployment:
             bc, bR = self.box_pose()
             Rrel = R.T @ bR
             parts += [R.T @ (bc - d.qpos[0:3]), Rrel[:, 0], Rrel[:, 1]]
+        if self.gait_period:
+            ph = 2 * np.pi * ((self.policy_calls * self.c["policy_dt"] / self.gait_period) % 1.0)
+            parts += [np.array([np.sin(ph), np.cos(ph)])]
         return np.concatenate(parts).astype(np.float32)
 
     def _hand_targets(self):
@@ -267,6 +273,7 @@ class CarryDeployment:
         self.last_action = np.zeros(len(self.leg_names) + (2 if self.ref_delta else 0))
         self.delta = np.zeros(2)
         self.delta_goal = np.zeros(2)
+        self.policy_calls = 0
         self.q_des = self.q_default.copy()
         self.carrier_pos = self.d.qpos[0:3].copy()
         self.lead_pos = np.zeros(3)
@@ -320,6 +327,7 @@ class CarryDeployment:
                     yaw = np.arctan2(2 * (q[0] * q[3] + q[1] * q[2]), 1 - 2 * (q[2] ** 2 + q[3] ** 2))
                     cmd[2] = np.clip(0.5 * np.arctan2(np.sin(-yaw), np.cos(-yaw)), -1.0, 1.0)
                 obs = self._obs(cmd)
+                self.policy_calls += 1
                 with torch.no_grad():
                     a = self.policy(torch.as_tensor(obs).unsqueeze(0))[0].numpy()
                 self.last_action = a.astype(float)

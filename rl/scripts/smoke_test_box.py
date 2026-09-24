@@ -89,6 +89,12 @@ def main():
                 fz = cf_.data.net_forces_w.torch[:, foot_ids].norm(dim=-1) > 1.0
                 foot_contact += (fz & alive.unsqueeze(-1)).float().sum(0)
                 foot_n += int(alive.sum())
+                zf = robot.data.body_link_pos_w.torch[:, [robot.body_names.index(f"{sd}_ankle_link")
+                                                          for sd in ("left", "right")], 2]
+                sel = fz & alive.unsqueeze(-1)
+                if i == 100:
+                    stance_z = []
+                stance_z.append(zf[sel])
             for n in counts:
                 counts[n] += int(u.termination_manager.get_term(n).sum())
             low_pelvis += int((robot.data.root_link_pos_w.torch[:, 2] < 0.5).sum())
@@ -120,6 +126,8 @@ def main():
         print(f"[box] 末步骨盆高 分位 10/50/90% {z.quantile(0.1):.3f}/{z.median():.3f}/{z.quantile(0.9):.3f} m；"
               f"各连杆有接触（>1 N）的环境比例 { {k: round(v, 2) for k, v in touching.items()} }")
         if foot_n:
+            sz = torch.cat(stance_z)
+            print(f"[box] 支撑脚 ankle_link 高度 中位 {sz.median():.4f} m（10/90% {sz.quantile(0.1):.4f}/{sz.quantile(0.9):.4f}）")
             print(f"[box] 首个 episode 存活段（第 100 步后）左 / 右脚着地占比 "
                   f"{(foot_contact / foot_n).tolist()}")
         dt_wall = time.perf_counter() - t0

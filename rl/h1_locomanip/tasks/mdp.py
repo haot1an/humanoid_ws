@@ -90,6 +90,51 @@ def box_slip_l2(env, box_name="box", robot_name="robot"):
     return (v_rel ** 2).sum(-1)
 
 
+# ---------------- 周期步态（v5，DEC-009）
+FOOT_STAND_HEIGHT = 0.070  # 支撑脚 ankle_link 原点离地高度 [m]：Isaac 中 EXP-020 行走实测中位 0.0703（10–90% 0.0695–0.0725）
+
+
+def gait_phase(env, period=0.8):
+    """φ = (episode 步数 · step_dt / T) mod 1。在 reset 时 episode_length_buf = 0，与部署端"reset 后第 k 次策略调用"一致。"""
+    return torch.remainder(env.episode_length_buf.float() * env.step_dt / period, 1.0)
+
+
+def gait_clock(env, period=0.8):
+    ph = 2 * torch.pi * gait_phase(env, period)
+    return torch.stack([torch.sin(ph), torch.cos(ph)], -1)
+
+
+def _stance_mask(env, period, command_name):
+    """期望支撑 (N, 2)[左, 右]：左 sin ≥ 0、右 sin < 0；|sin| < 0.1 双支撑；速度指令 < 0.1 m/s 视为站立（两脚支撑）。"""
+    sp = torch.sin(2 * torch.pi * gait_phase(env, period))
+    mask = torch.stack([sp >= 0, sp < 0], -1)
+    mask |= (sp.abs() < 0.1).unsqueeze(-1)
+    standing = env.command_manager.get_command(command_name)[:, :2].norm(dim=-1) < 0.1
+    mask |= standing.unsqueeze(-1)
+    return mask, standing
+
+
+def gait_contact_match(env, sensor_cfg: SceneEntityCfg, period=0.8, command_name="base_velocity"):
+    """DEC-009 第 3 项：两脚 (实际着地 == 期望支撑) 的平均，∈ [0, 1]。sensor_cfg.body_ids 顺序须为 [左, 右]。"""
+    contact = env.scene.sensors[sensor_cfg.name].data.current_contact_time.torch[:, sensor_cfg.body_ids] > 0.0
+    mask, _ = _stance_mask(env, period, command_name)
+    return (contact == mask).float().mean(-1)
+
+
+def swing_foot_height(env, asset_cfg: SceneEntityCfg, period=0.8, target=0.08, std=0.02, command_name="base_velocity"):
+    """DEC-009 第 4 项：摆动脚高度跟踪 h* = target·sin(π·摆动进度)，exp(−(h − h*)² / std²)，只对摆动脚平均；站立与双支撑为 0。
+    asset_cfg.body_ids 顺序须为 [左, 右]。左脚摆动于 φ ∈ [0.5, 1)，右脚摆动于 φ ∈ [0, 0.5)。"""
+    ph = gait_phase(env, period)
+    h = env.scene[asset_cfg.name].data.body_link_pos_w.torch[:, asset_cfg.body_ids, 2] - FOOT_STAND_HEIGHT
+    mask, standing = _stance_mask(env, period, command_name)
+    swing = ~mask                                                              # (N, 2)
+    prog = torch.stack([(ph - 0.5) / 0.5, ph / 0.5], -1).clamp(0.0, 1.0)       # 左、右的摆动进度
+    h_star = target * torch.sin(torch.pi * prog)
+    r = torch.exp(-((h - h_star) ** 2) / std ** 2) * swing.float()
+    n = swing.float().sum(-1)
+    return torch.where((n > 0) & ~standing, r.sum(-1) / n.clamp(min=1.0), torch.zeros_like(n))
+
+
 # ---------------- 终止
 def box_dropped(env, drop_height=0.15, max_horizontal=0.6, box_name="box", robot_name="robot"):
     """DEC-007 第 6 项：箱子中心低于两前臂负载点中点 drop_height 以上，或与骨盆水平距离超过 max_horizontal。"""
