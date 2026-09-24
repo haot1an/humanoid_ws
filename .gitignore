@@ -14,6 +14,7 @@ compile_commands.json
 
 # ---- 仿真 / 训练 / 评估输出
 MUJOCO_LOG.TXT
+MJDATA.TXT
 *.log
 logs/
 rl/results/
